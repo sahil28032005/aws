@@ -1,4 +1,5 @@
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, CreateBucketCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as fs from 'fs';
 //intitalize s3 cient with specific users access key and security key
 const client = new S3Client({
@@ -19,26 +20,34 @@ const client = new S3Client({
 
 const getObjectFroms3 = async (key) => {
     try {
-        const data = client.send(
-            new GetObjectCommand({
-                Bucket: 'sahil-sadekar-dev',
-                Key: key
-            })
-        );
+        // 1)using writable object stream
+        // const data = client.send(
+        //     new GetObjectCommand({
+        //         Bucket: 'sahil-sadekar-dev',
+        //         Key: key
+        //     })
+        // );
 
-        //before returning try to make stream which downloads it by using rite stream
-        const writableStream = fs.createWriteStream('./downloaded-file.jpg');
-        (await data).Body.pipe(writableStream);
-        console.log("requuested object downloaded successfully...");
-        return data;
+        // //before returning try to make stream which downloads it by using rite stream
+        // const writableStream = fs.createWriteStream('./downloaded-file.jpg');
+        // (await data).Body.pipe(writableStream);
+        // console.log("requuested object downloaded successfully...");
+        // return data;
 
+
+        // 2)approch 2 using presigned url generator
+        return getSignedUrl(client, new GetObjectCommand({
+            Bucket: 'sahil-sadekar-dev',
+            Key: key
+        }));
     }
     catch (err) {
         console.log("problem arrived: ", err.message);
     }
 }
 
-console.log('getObjectFroms3', await getObjectFroms3('tom.jpg'));
+// console.log('getObjectFroms3', await getObjectFroms3('tom.jpg'));
+// console.log('getObjectFroms3', await getObjectFroms3('tom.jpg'));
 
 
 //slef understannding notes
@@ -69,3 +78,37 @@ console.log('getObjectFroms3', await getObjectFroms3('tom.jpg'));
 // 1)make private s3 bucket
 //2)insert ojects in that
 //3)
+
+//create buckent using clinet
+async function createBucket(bucketName) {
+    try {
+        //append timestamp to possibly make it as ubique bucket
+        const timestamp = Date.now();
+        const validBucketName = bucketName.toLowerCase() + '-' + timestamp;
+        return await client.send(new CreateBucketCommand({
+            Bucket: validBucketName,
+        }));
+    }
+    catch (e) {
+        console.error("Error creating bucket", e.message);
+    }
+}
+
+//trial for create bucket
+// console.log('create bucket flags',createBucket('sdkBucket123'));
+
+//pushing objects to s3 using s3 client sdk
+async function pushDataToBucket(bucketName, key, body) {
+    try {
+        return await client.send(new PutObjectCommand({
+            Bucket: bucketName,
+            Key: key,
+            Body: body
+        }));
+    }
+    catch (e) {
+        console.error("Error creating bucket", e.message);
+    }
+}
+
+// console.log('create bucket flags',pushDataToBucket('sahil-sadekar-dev',"demo.txt","this is text inside file"));
