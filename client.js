@@ -3,16 +3,17 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as fs from 'fs';
 //intitalize s3 cient with specific users access key and security key
 const client = new S3Client({
-    region: 'ap-south-1',
-    // credentials: {
-    //     accessKeyId: '',
-    //     secretAccessKey: ''
-    // },
-    //another trial for permisionless
+    region: 'us-east-1',
     credentials: {
         accessKeyId: '',
         secretAccessKey: ''
     },
+    //another trial for permisionless
+    //this is credentials of permisionless user defined in aws
+    // credentials: {
+    //     accessKeyId: '',
+    //     secretAccessKey: ''
+    // },
 });
 
 //now we have amazon aws client present with specific user having some lmited rights
@@ -37,7 +38,7 @@ const getObjectFroms3 = async (key) => {
 
         // 2)approch 2 using presigned url generator
         return getSignedUrl(client, new GetObjectCommand({
-            Bucket: 'sahil-sadekar-dev',
+            Bucket: 'presigned-bucket-demo',
             Key: key
         }));
     }
@@ -46,8 +47,8 @@ const getObjectFroms3 = async (key) => {
     }
 }
 
-// console.log('getObjectFroms3', await getObjectFroms3('tom.jpg'));
-// console.log('getObjectFroms3', await getObjectFroms3('tom.jpg'));
+// console.log('getObjectFroms3', await getObjectFroms3('resume (1) (1).pdf'));
+// console.log('getObjectFroms3', await getObjectFroms3('tom.jpg')); //in my case it allows user to accee resource thruugh this presigned url to get bucket object through prresigned url without having s3 access
 
 
 //slef understannding notes
@@ -95,7 +96,7 @@ async function createBucket(bucketName) {
 }
 
 //trial for create bucket
-// console.log('create bucket flags',createBucket('sdkBucket123'));
+// console.log('create bucket flags',createBucket('sdkBucket123')); //here this not allows here and displays correct message as this user is permisionless and dont have bucket creation rights as well as bucket read
 
 //pushing objects to s3 using s3 client sdk
 async function pushDataToBucket(bucketName, key, body) {
@@ -111,4 +112,18 @@ async function pushDataToBucket(bucketName, key, body) {
     }
 }
 
-// console.log('create bucket flags',pushDataToBucket('sahil-sadekar-dev',"demo.txt","this is text inside file"));
+// console.log('create bucket flags',pushDataToBucket('sahil-sadekar-dev',"demo.txt","this is text inside file")); //cosider same as above
+//send objects or upload using presigned url as our user has access to s3 so he can upload objects with the help of presigned urls
+async function uploadObjectsThroughUri(key) {
+    try {
+
+        return await getSignedUrl(client, new PutObjectCommand({
+            Bucket: "presigned-bucket-demo", Key: key
+        }));
+    }
+    catch (e) {
+        console.error("Error uploading content", e.message);
+    }
+}
+
+console.log('presigned urll for file uploda', await uploadObjectsThroughUri("demo1.mp4"));
